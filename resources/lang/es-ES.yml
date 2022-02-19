@@ -1,6 +1,6 @@
 ---
 name: Towny
-version: 0.141
+version: 0.144
 language: spanish
 author: Seruhio, Alvarote1998, Beelzebu, ElMoha943, Ngzhiwei
 website: 'http://townyadvanced.github.io/'
@@ -1258,9 +1258,9 @@ status_registered: 'Registrado:'
 status_lastonline: 'Ultima conexión:'
 status_fractions: '%s/%s'
 status_rank_list: 'Lista de rangos'
-status_hover_click_for_more: 'Click for more information.'
+status_hover_click_for_more: 'Haga clic aquí para más información.'
 status_jailed: 'Jailed:'
-status_bad_yes: '&cYES'
+status_bad_yes: '&cSI'
 status_good_no: '&aNO'
 status_resident_tax_title: '%s''s Tax'
 #Added in 0.122
@@ -1434,3 +1434,14 @@ msg_your_locale: 'Towny ocupa la configuracion de lenguaje de tu cliente (%s) pa
 msg_you_must_wait_x_seconds_before_renaming_your_town: 'Tienes que esperar %s segundos para volver a cambiar el nombre de tu ciudad de nuevo.'
 #Added in 1.141
 msg_newday_already_scheduled_soon: 'Una nueva tarea diaria ha sido programada para que ocurra pronto.'
+#Added in 0.142
+#Message shown when a player is toggling neutrality too fast.
+msg_err_cannot_toggle_neutral_x_seconds_remaining: 'You cannot toggle neutrality, %s seconds remaining.'
+#Added in 0.143
+#Message shown when a console sender uses a command meant for in game.
+msg_err_command_not_for_console_use: 'This command cannot be used from the console.'
+#Added in 0.144
+#Message shown when an admin uses /ta town NAME toggle unlimitedclaims.
+msg_town_unlimitedclaims_setting_set_to: 'The town %s has had their unlimitedclaims setting set to %s'
+#Message shown when an admin uses up their claims and is asked if they want to turn on unlimited claiming.
+did_you_want_to_toggle_unlimited_claims: 'You do not have enough townblocks to claim, did you want to turn on unlimited claiming for the town of %s'

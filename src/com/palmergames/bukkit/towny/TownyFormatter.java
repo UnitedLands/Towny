@@ -299,10 +299,14 @@ public class TownyFormatter {
 			screen.addComponentOf("registered", colourKeyValue(translator.of("status_founded"), registeredFormat.format(town.getRegistered())));
 
 		// Town Size: 0 / 16 [Bought: 0/48] [Bonus: 0] [Home: 33,44]
-		screen.addComponentOf("townblocks", colourKeyValue(translator.of("status_town_size"), translator.of("status_fractions", town.getTownBlocks().size(), TownySettings.getMaxTownBlocks(town))) +
+		if (!town.hasUnlimitedClaims())
+			screen.addComponentOf("townblocks", colourKeyValue(translator.of("status_town_size"), translator.of("status_fractions", town.getTownBlocks().size(), TownySettings.getMaxTownBlocks(town))) +
 	            (TownySettings.isSellingBonusBlocks(town) ? colourBracketElement(translator.of("status_town_size_bought"), translator.of("status_fractions", town.getPurchasedBlocks(), TownySettings.getMaxPurchasedBlocks(town))) : "") + 
 	            (town.getBonusBlocks() > 0 ? colourBracketElement(translator.of("status_town_size_bonus"), String.valueOf(town.getBonusBlocks())) : "") + 
 	            (TownySettings.getNationBonusBlocks(town) > 0 ? colourBracketElement(translator.of("status_town_size_nationbonus"), String.valueOf(TownySettings.getNationBonusBlocks(town))) : ""));
+		// Town Size: 0 / ∞
+		else
+			screen.addComponentOf("townblocks", colourKeyValue(translator.of("status_town_size"), translator.of("status_fractions", town.getTownBlocks().size(), town.getMaxTownBlocksAsAString())));
 
 		if (town.isPublic()) {
 			Component homeComponent = Component.text(!town.isPublic() ? "" : (translator.of("status_home_element", (TownySettings.getTownDisplaysXYZ() ?
@@ -1113,93 +1117,5 @@ public class TownyFormatter {
 
 		return webUrl;
 	}
-	
-	/*
-	 * Deprecated methods.
-	 */
-	
-	/**
-	 * @param obj The {@link TownyObject} to get the formatted name from.
-	 * 
-	 * @return The formatted name of the object.
-	 * 
-	 * @deprecated Since 0.96.0.0 use {@link TownyObject#getFormattedName()} instead.
-	 */
-	@Deprecated
-	public static String getFormattedName(TownyObject obj) {
-		return obj.getFormattedName();
-	}
-
-	/**
-	 * @param resident The {@link Resident} to get the formatted name from.
-	 *                    
-	 * @return The formatted name of the object.
-	 * 
-	 * @deprecated Since 0.96.0.0 use {@link Resident#getFormattedName()} instead.
-	 */
-	@Deprecated
-	public static String getFormattedResidentName(Resident resident) {
-		return resident.getFormattedName();
-	}
-
-	/**
-	 * @param town The {@link Town} to get the formatted name from.
-	 *                
-	 * @return The formatted name of the object.
-	 * 
-	 * @deprecated Since 0.96.0.0 use {@link Town#getFormattedName()} instead.
-	 */
-	@Deprecated
-	public static String getFormattedTownName(Town town) {
-		return town.getFormattedName();
-	}
-
-	/**
-	 * @param nation The {@link Nation} to get the formatted name from.
-	 * 
-	 * @return The formatted name of the object.
-	 *
-	 * @deprecated Since 0.96.0.0 use {@link Nation#getFormattedName()} instead.
-	 */
-	@Deprecated
-	public static String getFormattedNationName(Nation nation) {
-		return nation.getFormattedName();
-	}
-
-	/**
-	 * @param resident The {@link Resident} to get the formatted title name from.
-	 *                    
-	 * @return The formatted title name of the resident.
-	 * 
-	 * @deprecated Since 0.96.0.0 use {@link Resident#getFormattedTitleName()} instead.
-	 */
-	@Deprecated
-	public static String getFormattedResidentTitleName(Resident resident) {
-		return resident.getFormattedTitleName();
-	}
-	
-	/**
-	 * @param resident The {@link Resident} to get the king or mayor prefix from.
-	 *                    
-	 * @return The king or mayor prefix of the resident.
-	 *
-	 * @deprecated Since 0.96.0.0 use {@link Resident#getNamePrefix()} instead.
-	 */
-	@Deprecated	
-	public static String getNamePrefix(Resident resident) {
-		return resident.getNamePrefix();	
-	}	
-
-	/**
-	 * @param resident The {@link Resident} to get the king or mayor postfix from.
-	 *                    
-	 * @return The king or mayor postfix of the resident.
-	 *
-	 * @deprecated Since 0.96.0.0 use {@link Resident#getNamePostfix()} instead.
-	 */
-	@Deprecated	
-	public static String getNamePostfix(Resident resident) {
-		return resident.getNamePostfix();
-	}	
 
 }

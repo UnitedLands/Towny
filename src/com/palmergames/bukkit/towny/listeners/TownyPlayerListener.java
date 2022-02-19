@@ -134,11 +134,11 @@ public class TownyPlayerListener implements Listener {
 				: Translatable.of("msg_safe_mode_player");
 			TownyMessaging.sendErrorMsg(player, Translatable.of("msg_safe_mode_base"), tipMsg);
 		} catch (Exception e) {
-			// Safemode is affecting Towny's ability to use Transltables.
+			// Safemode is affecting Towny's ability to use Translatables.
 			String msg = player.isOp() || player.hasPermission("towny.admin") 
 				? "Check the server's console for more information."
 				: "Tell an admin to check the server's console.";
-			TownyMessaging.sendErrorMsg(player, "[Error] Towny is locked in Safe Mode due to an error! " + msg);
+			player.sendMessage(ChatColor.RED + "[Towny] [Error] Towny is locked in Safe Mode due to an error! " + msg);
 		}
 	}
 
@@ -790,7 +790,9 @@ public class TownyPlayerListener implements Listener {
 			// Caught players are tested for pvp at the location of the catch.
 			if (caught.getType().equals(EntityType.PLAYER)) {
 				TownyWorld world = TownyAPI.getInstance().getTownyWorld(event.getCaught().getWorld().getName());
-				assert world != null;
+				if (world == null)
+					return;
+
 				TownBlock tb = TownyAPI.getInstance().getTownBlock(event.getCaught().getLocation());
 				test = !CombatUtil.preventPvP(world, tb);
 			// Non-player catches are tested for destroy permissions.

@@ -21,7 +21,6 @@ import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.object.spawnlevel.SpawnLevel;
 import com.palmergames.bukkit.towny.permissions.PermissionNodes;
 import com.palmergames.bukkit.towny.utils.EntityTypeUtil;
-import com.palmergames.bukkit.util.Colors;
 import com.palmergames.bukkit.util.ItemLists;
 import com.palmergames.util.FileMgmt;
 import com.palmergames.util.StringMgmt;
@@ -413,25 +412,6 @@ public class TownySettings {
 			return "";
 		}
 		return data;
-	}
-
-	/**
-	 * Gets the lang string from the key.
-	 * 
-	 * @param root The key for the language string.
-	 * @return The translated lang string.
-	 * 
-	 * @deprecated As of 0.96.2.5+ use {@link Translation#of(String)} instead.
-	 */
-	@Deprecated
-	public static String getLangString(String root) {
-		String data = Translation.of(root);
-
-		if (data == null) {
-			sendError(root.toLowerCase() + " from " + config.getString("language"));
-			return "";
-		}
-		return StringMgmt.translateHexColors(Colors.translateColorCodes(data));
 	}
 
 	public static List<Integer> getIntArr(ConfigNodes node) {
@@ -1070,6 +1050,10 @@ public class TownySettings {
 		return 0;
 	}
 
+	public static boolean areTownBlocksUnlimited() {
+		return getTownBlockRatio() < 0;
+	}
+	
 	public static int getTownBlockRatio() {
 
 		return getInt(ConfigNodes.TOWN_TOWN_BLOCK_RATIO);
@@ -1359,17 +1343,6 @@ public class TownySettings {
 			return getMaxBonusBlocks(town);
 		else
 			return getInt(ConfigNodes.TOWN_MAX_PURCHASED_BLOCKS);
-	}
-	
-	/**
-	 * @deprecated as of 0.96.6.0, use {@link #getMaxPurchasedBlocks(Town town)}
-	 * @param town Town to get the maximum number of blocks they can buy.
-	 * @return {@link #getMaxPurchasedBlocks(Town)}
-	 */
-	@Deprecated
-	public static int getMaxPurchedBlocks(Town town) {
-		
-		return getMaxPurchasedBlocks(town);
 	}
 	
 	public static int getMaxPurchasedBlocksNode() {
@@ -1876,7 +1849,7 @@ public class TownySettings {
 
 	private static double getTownPenaltyUpkeepCostRaw(Town town) {
 
-		if (getUpkeepPenalty() > 0) {
+		if (getUpkeepPenalty() > 0 && !town.hasUnlimitedClaims()) {
 			
 			int overClaimed = town.getTownBlocks().size() - getMaxTownBlocks(town);
 			
@@ -2178,6 +2151,10 @@ public class TownySettings {
 		return getBoolean(ConfigNodes.TOWN_MIN_DISTANCE_IGNORED_FOR_ALLIES);
 	}
 
+	public static int getMinDistanceBetweenHomeblocks() {
+		return getInt(ConfigNodes.TOWN_MIN_DISTANCE_BETWEEN_HOMEBLOCKS);
+	}
+	
 	public static int getMaxDistanceBetweenHomeblocks() {
 
 		return getInt(ConfigNodes.TOWN_MAX_DISTANCE_BETWEEN_HOMEBLOCKS);
@@ -2564,6 +2541,11 @@ public class TownySettings {
 	public static int getPVPCoolDownTime() {
 
 		return getInt(ConfigNodes.GTOWN_SETTINGS_PVP_COOLDOWN_TIMER);
+	}
+
+	public static int getPeacefulCoolDownTime() {
+
+		return getInt(ConfigNodes.GTOWN_SETTINGS_NEUTRAL_COOLDOWN_TIMER);
 	}
 	
 	public static String getTownAccountPrefix() {
@@ -3076,6 +3058,10 @@ public class TownySettings {
 		return getBoolean(ConfigNodes.TOWN_RUINING_TOWNS_BECOME_PUBLIC);
 	}
 
+	public static boolean areRuinsMadeOpen() {
+		return getBoolean(ConfigNodes.TOWN_RUINING_TOWNS_BECOME_OPEN);
+	}
+
 	public static void saveConfig() {
 		config.save();
 	}
@@ -3113,6 +3099,10 @@ public class TownySettings {
 			enabledLanguages.add(string.toLowerCase(Locale.ROOT).replaceAll("-", "_").replaceAll(".yml", ""));
 
 		return enabledLanguages.contains(locale.toLowerCase(Locale.ROOT));
+	}
+	
+	public static boolean doCapitalsPayNationTax() {
+		return getBoolean(ConfigNodes.ECO_DAILY_TAXES_DO_CAPITALS_PAY_NATION_TAX);
 	}
 }
 

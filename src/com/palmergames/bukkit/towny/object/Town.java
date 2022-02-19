@@ -27,7 +27,6 @@ import com.palmergames.bukkit.towny.object.metadata.CustomDataField;
 import com.palmergames.bukkit.towny.permissions.TownyPerms;
 import com.palmergames.bukkit.util.BukkitTools;
 import com.palmergames.util.MathUtil;
-import com.palmergames.util.StringMgmt;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -78,6 +77,7 @@ public class Town extends Government implements TownBlockOwner {
 	private double debtBalance = 0.0;
 	private Nation nation;
 	private boolean hasUpkeep = true;
+	private boolean hasUnlimitedClaims = false;
 	private boolean isTaxPercentage = TownySettings.getTownDefaultTaxPercentage();
 	private TownBlock homeBlock;
 	private TownyWorld world;
@@ -283,16 +283,6 @@ public class Town extends Government implements TownBlockOwner {
 		return Collections.unmodifiableList(residents);
 	}
 
-	/**
-	 * @deprecated as of 0.96.3.0, use {@link #getRank(String)} instead.
-	 * @return Returns a list of residents with the assistant rank.
-	 */
-	@Deprecated
-	public List<Resident> getAssistants() {
-
-	    return getRank("assistant");
-	}
-
 	public List<Resident> getRank(String rank) {
 
 		List<Resident> residentsWithRank = new ArrayList<>();
@@ -327,19 +317,6 @@ public class Town extends Government implements TownBlockOwner {
 		
 		Resident resident = TownyAPI.getInstance().getResident(uuid);
 		return resident != null && hasResident(resident);
-	}
-	
-	/**
-	 * @deprecated Since 0.96.3.0, use {@link Resident#hasTownRank(String)} (using "assistant" as argument) instead.
-	 * Whether a resident has an assistant role or not.
-	 * 
-	 * @param resident - Resident to check for a rank.
-	 * @return A true if the resident is an assistant, false otherwise.
-	 */
-	@Deprecated
-	public boolean hasAssistant(Resident resident) {
-
-		return resident.hasTownRank("assistant");
 	}
 	
 	public boolean hasResidentWithRank(Resident resident, String rank) {
@@ -391,6 +368,20 @@ public class Town extends Government implements TownBlockOwner {
 	public boolean hasUpkeep() {
 
 		return hasUpkeep;
+	}
+
+	/**
+	 * @return whether the town hasUnlimitedClaims
+	 */
+	public boolean hasUnlimitedClaims() {
+		return TownySettings.areTownBlocksUnlimited() || hasUnlimitedClaims;
+	}
+
+	/**
+	 * @param hasUnlimitedClaims set whether the town has unlimited claims or not.
+	 */
+	public void setHasUnlimitedClaims(boolean hasUnlimitedClaims) {
+		this.hasUnlimitedClaims = hasUnlimitedClaims;
 	}
 
 	public void setHasMobs(boolean hasMobs) {
@@ -481,7 +472,14 @@ public class Town extends Government implements TownBlockOwner {
 		this.bonusBlocks = bonusBlocks;
 	}
 
-	public int getTotalBlocks() {
+	public String getMaxTownBlocksAsAString() {
+		if (hasUnlimitedClaims())
+			return "∞";
+		else
+			return String.valueOf(getMaxTownBlocks());
+	}
+	
+	public int getMaxTownBlocks() {
 
 		return TownySettings.getMaxTownBlocks(this);
 	}
@@ -717,7 +715,7 @@ public class Town extends Government implements TownBlockOwner {
 		if (homeBlock != null)
 			return homeBlock.getWorld();
 		
-		return TownyUniverse.getInstance().getDataSource().getWorlds().get(0);
+		return TownyUniverse.getInstance().getTownyWorlds().get(0);
 	}
 
 	public boolean hasMayor() {
@@ -1133,7 +1131,16 @@ public class Town extends Government implements TownBlockOwner {
 	}
 	
 	public boolean isOverClaimed() {
-		return (getTownBlocks().size() > TownySettings.getMaxTownBlocks(this));
+		return !hasUnlimitedClaims() && getTownBlocks().size() > getMaxTownBlocks();
+	}
+	
+	/**
+	 * Only use this if TownySettings.getTownBlockRatio() is greater than -1.
+	 * 
+	 * @return the number of TownBlocks a town is able to claim.
+	 */
+	public int availableTownBlocks() {
+		return getMaxTownBlocks() - getTownBlocks().size();
 	}
 	
     @Override
@@ -1243,22 +1250,6 @@ public class Town extends Government implements TownBlockOwner {
 		
 		return Collections.unmodifiableCollection(plotGroups.values());
 	}
-
-	// Method is inefficient compared to getting the group from name.
-	/**
-	 * @deprecated since 0.97.0.11 for being unused.
-	 */
-	@Deprecated
-	public PlotGroup getObjectGroupFromID(UUID plotGroupId) {
-		if (hasPlotGroups()) {
-			for (PlotGroup pg : getPlotGroups()) {
-				if (pg.getID().equals(plotGroupId)) 
-					return pg;
-			}
-		}
-		
-		return null;
-	}
 	
 	public boolean hasPlotGroups() {
 		return plotGroups != null;
@@ -1338,9 +1329,6 @@ public class Town extends Government implements TownBlockOwner {
 	}
 
 	public boolean isRuined() {
-		if(!ruined && residents.isEmpty()) {
-			ruined = true;  //If all residents have been deleted, flag town as ruined.
-		}
 		return ruined;
 	}
 	
@@ -1398,49 +1386,6 @@ public class Town extends Government implements TownBlockOwner {
 	
 	public boolean hasNationZoneOverride() {
 		return nationZoneOverride > 0;
-	}
-	
-	/**
-	 * @deprecated As of 0.96.0.0+ please use {@link EconomyAccount#getWorld()} instead.
-	 * 
-	 * @return The world this resides in.
-	 */
-	@Deprecated
-	public World getBukkitWorld() {
-		if (hasWorld()) {
-			return BukkitTools.getWorld(getHomeblockWorld().getName());
-		} else {
-			return BukkitTools.getWorlds().get(0);
-		}
-	}
-
-	/**
-	 * @deprecated As of 0.96.0.0+ please use {@link EconomyAccount#getName()} instead.
-	 * 
-	 * @return The name of the economy account.
-	 */
-	@Deprecated
-	public String getEconomyName() {
-		return StringMgmt.trimMaxLength(Town.ECONOMY_ACCOUNT_PREFIX + getName(), 32);
-	}
-	
-	/**
-	 * @deprecated As of 0.96.2.0, please use {@link #getBoard()} instead.
-	 * 
-	 * @return getBoard()
-	 */
-	@Deprecated
-	public String getTownBoard() {
-		return getBoard();
-	}
-
-	/**
-	 * @return The UUID for this town.
-	 * @deprecated as of 0.96.4.0, use {@link #getUUID()} instead.
-	 */
-	@Deprecated
-	public UUID getUuid() {
-		return getUUID();
 	}
 
 	public long getJoinedNationAt() {

@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -432,17 +433,6 @@ public class TownyUniverse {
 		}
 	}
 
-	/**
-	 *
-	 * @return map of string -&gt; resident.
-	 * 
-	 * @deprecated as of 0.96.6.0. Towny does not recommend directly accessing internal structures.
-	 */
-	@Deprecated
-    public Map<String, Resident> getResidentMap() {
-        return residentNameMap;
-    }
-    
     @Unmodifiable
     public Collection<Resident> getResidents() {
 		return Collections.unmodifiableCollection(residentNameMap.values());
@@ -539,18 +529,6 @@ public class TownyUniverse {
     	return Collections.unmodifiableCollection(townNameMap.values());
 	}
 
-	/**
-	 * 
-	 * @return direct access to the town name map that TownyUniverse uses.
-	 * 
-	 * @deprecated as of 0.96.4.0. It is not recommended to directly access the map, but rather use
-	 * other towny universe methods to ensure safe-access and safe-manipulation.
-	 */
-	@Deprecated
-	public Map<String, Town> getTownsMap() {
-        return townNameMap;
-    }
-    
     public Trie getTownsTrie() {
     	return townsTrie;
 	}
@@ -777,25 +755,24 @@ public class TownyUniverse {
 		}
 	}
 
-	/**
-	 * Get direct access to the internal nation map.
-	 * 
-	 * @return direct access to internal nation map.
-	 * 
-	 * @deprecated as of 0.96.4.0, It is not safe, nor recommended, to directly access the internal nation map. 
-	 */
-	@Deprecated
-	public Map<String, Nation> getNationsMap() {
-		return nationNameMap;
-	}
-
 	public Trie getNationsTrie() {
 		return nationsTrie;
 	}
 	
-    public Map<String, TownyWorld> getWorldMap() {
+	// =========== World Methods ===========
+	
+	public Map<String, TownyWorld> getWorldMap() {
         return worlds;
     }
+	
+	@Nullable
+	public TownyWorld getWorld(String name) {
+		return worlds.get(name.toLowerCase(Locale.ROOT));
+	}
+	
+	public List<TownyWorld> getTownyWorlds() {
+		return new ArrayList<>(worlds.values());
+	}
     
     /*
      * Towny Tree command output.
@@ -821,13 +798,13 @@ public class TownyUniverse {
             out.addAll(nation.getTreeString(depth + 2));
         }
         
-        Collection<Town> townsWithoutNation = dataSource.getTownsWithoutNation();
+        Collection<Town> townsWithoutNation = TownyAPI.getInstance().getTownsWithoutNation();
         out.add(getTreeDepth(depth + 1) + "Towns (" + townsWithoutNation.size() + "):");
         for (Town town : townsWithoutNation) {
             out.addAll(town.getTreeString(depth + 2));
         }
         
-        Collection<Resident> residentsWithoutTown = dataSource.getResidentsWithoutTown();
+        Collection<Resident> residentsWithoutTown = TownyAPI.getInstance().getResidentsWithoutTown();
         out.add(getTreeDepth(depth + 1) + "Residents (" + residentsWithoutTown.size() + "):");
         for (Resident resident : residentsWithoutTown) {
             out.addAll(resident.getTreeString(depth + 2));
@@ -891,86 +868,6 @@ public class TownyUniverse {
 	@Nullable
 	public PlotGroup getGroup(UUID groupID) {
 		return plotGroupUUIDMap.get(groupID);
-	}
-
-	/**
-	 * 
-	 * @param town Town to create a group for
-	 * @param name String name of plogroup
-	 * @param id UUID of the group
-	 * @return PlotGroup 
-	 * @throws AlreadyRegisteredException When group name is already taken.
-	 * @deprecated as of 0.97.0.11 for being unused.
-	 */
-    @Deprecated
-	public PlotGroup newGroup(Town town, String name, UUID id) throws AlreadyRegisteredException {
-    	
-    	// Create new plot group.
-		PlotGroup newGroup = new PlotGroup(id, name, town);
-		
-		// Check if there is a duplicate
-		if (town.hasPlotGroupName(newGroup.getName()))
-			throw new AlreadyRegisteredException("group " + town.getName() + ":" + id + " already exists");
-		
-		// Create key and store group globally.
-		town.addPlotGroup(newGroup);
-		
-		return newGroup;
-	}
-
-    /**
-     * 
-     * @param townName String name of Town.
-     * @param groupID UUID of the PlotGroup
-     * @return true if the Town has the given PlotGroup.
-     * @deprecated as of 0.97.0.11 for being unused.
-     */
-	@Deprecated
-    public boolean hasGroup(String townName, UUID groupID) {
-		Town t = townNameMap.get(townName);
-		
-		if (t != null) {
-			return t.getObjectGroupFromID(groupID) != null;
-		}
-		
-		return false;
-	}
-
-    /**
-     * 
-     * @param townName String name of Town.
-     * @param groupName String name of the PlotGroup
-     * @return true if the Town has the given PlotGroup.
-     * @deprecated as of 0.97.0.11 for being unused.
-     */
-	@Deprecated
-	public boolean hasGroup(String townName, String groupName) {
-		Town t = townNameMap.get(townName);
-
-		if (t != null) {
-			return t.hasPlotGroupName(groupName);
-		}
-
-		return false;
-	}
-
-	/**
-	 * Gets the plot group from the town name and the plot group name
-	 * 
-	 * @param townName Town Name
-	 * @param groupName Plot Group Name
-	 * @return the plot group if found, otherwise null
-	 * @deprecated as of 0.97.0.11 for being unused.
-	 */
-	@Deprecated
-	public PlotGroup getGroup(String townName, String groupName) {
-		Town t = townNameMap.get(townName);
-
-		if (t != null) {
-			return t.getPlotObjectGroupFromName(groupName);
-		}
-
-		return null;
 	}
 
 	/*
@@ -1105,6 +1002,10 @@ public class TownyUniverse {
      * Jail Stuff
      */
 
+	public List<Jail> getJails() {
+		return new ArrayList<>(getJailUUIDMap().values());
+	}
+	
     public Map<UUID, Jail> getJailUUIDMap() {
     	return jailUUIDMap;
     }
@@ -1146,33 +1047,5 @@ public class TownyUniverse {
 	
 	public Map<String,String> getReplacementNameMap() {
 		return replacementNamesMap;
-	}
-
-    /*
-     * Deprecated Stuff
-     */
-    
-	/**
-	 * Retrieves the configuration's output database type.
-	 * 
-	 * @return Returns the output of {@link TownySettings#getSaveDatabase()}
-	 * 
-	 * @deprecated as of 0.96.3.0, use {@link TownySettings#getSaveDatabase()} instead.
-	 */
-	@Deprecated
-	public String getSaveDbType() {
-		return TownySettings.getSaveDatabase();
-	}
-
-	/**
-	 * Retrieves the configuration's input database type.
-	 * 
-	 * @return Returns the output of {@link TownySettings#getLoadDatabase()}
-	 * 
-	 * @deprecated as of 0.96.3.0, use {@link TownySettings#getLoadDatabase()} instead.
-	 */
-	@Deprecated
-	public String getLoadDbType() {
-		return TownySettings.getLoadDatabase();
 	}
 }

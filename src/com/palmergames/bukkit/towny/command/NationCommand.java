@@ -10,7 +10,6 @@ import com.palmergames.bukkit.towny.TownySettings;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.TownyCommandAddonAPI.CommandType;
 import com.palmergames.bukkit.towny.confirmations.Confirmation;
-import com.palmergames.bukkit.towny.db.TownyDataSource;
 import com.palmergames.bukkit.towny.event.NationAddEnemyEvent;
 import com.palmergames.bukkit.towny.event.NationInviteTownEvent;
 import com.palmergames.bukkit.towny.event.NationPreAddEnemyEvent;
@@ -61,6 +60,8 @@ import com.palmergames.bukkit.towny.object.inviteobjects.TownJoinNationInvite;
 import com.palmergames.bukkit.towny.permissions.PermissionNodes;
 import com.palmergames.bukkit.towny.permissions.TownyPermissionSource;
 import com.palmergames.bukkit.towny.permissions.TownyPerms;
+import com.palmergames.bukkit.towny.tasks.CooldownTimerTask;
+import com.palmergames.bukkit.towny.tasks.CooldownTimerTask.CooldownType;
 import com.palmergames.bukkit.towny.utils.MapUtil;
 import com.palmergames.bukkit.towny.utils.MoneyUtil;
 import com.palmergames.bukkit.towny.utils.NameUtil;
@@ -539,6 +540,9 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 			// Test if this is a town status screen lookup.
 			if (tryNationStatusScreen(player, split))
 				return;
+			
+			// Alert the player that the subcommand doesn't exist.
+			throw new TownyException(Translatable.of("msg_err_invalid_sub"));
 		}
 	}
 	
@@ -1209,7 +1213,6 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 	 * @throws TownyException generic
 	 */
 	public void nationAdd(Player player, String[] names) throws TownyException {
-		TownyDataSource dataSource = TownyUniverse.getInstance().getDataSource();
 
 		if (names.length < 1)
 			throw new TownyException("Eg: /nation add [names]");
@@ -1241,11 +1244,11 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 		names = newtownlist.toArray(new String[0]);
 		String[] namestoremove = removeinvites.toArray(new String[0]);
 		if (namestoremove.length >= 1) {
-			nationRevokeInviteTown(player, nation, dataSource.getTowns(namestoremove));
+			nationRevokeInviteTown(player, nation, TownyAPI.getInstance().getTowns(namestoremove));
 		}
 
 		if (names.length >= 1) {
-			nationAdd(player, nation, dataSource.getTowns(names));
+			nationAdd(player, nation, TownyAPI.getInstance().getTowns(names));
 		}
 	}
 
@@ -1399,7 +1402,7 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 
 		Nation nation = getNationFromPlayerOrThrow(player);
 
-		nationKick(player, nation, TownyUniverse.getInstance().getDataSource().getTowns(names));
+		nationKick(player, nation, TownyAPI.getInstance().getTowns(names));
 	}
 
 	public static void nationKick(CommandSender sender, Nation nation, List<Town> kicking) {
@@ -2442,6 +2445,13 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 
 		if (peacefulState && TownyEconomyHandler.isActive() && !nation.getAccount().canPayFromHoldings(cost))
 			throw new TownyException(Translatable.of("msg_nation_cant_peaceful"));
+		
+		if (TownySettings.getPeacefulCoolDownTime() > 0 && 
+			!admin && 
+			CooldownTimerTask.hasCooldown(nation.getName(), CooldownType.NEUTRALITY) && 
+			!TownyUniverse.getInstance().getPermissionSource().testPermission((Player) sender, PermissionNodes.TOWNY_ADMIN.getNode())) {
+			throw new TownyException(Translatable.of("msg_err_cannot_toggle_neutral_x_seconds_remaining", CooldownTimerTask.getCooldownRemaining(nation.getName(), CooldownType.NEUTRALITY)));
+		}
 
 		// Fire cancellable event directly before setting the toggle.
 		NationToggleNeutralEvent preEvent = new NationToggleNeutralEvent(sender, nation, admin, peacefulState);

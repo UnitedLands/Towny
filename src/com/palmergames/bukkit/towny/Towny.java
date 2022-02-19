@@ -1,4 +1,4 @@
-package com.palmergames.bukkit.towny;
+ package com.palmergames.bukkit.towny;
 
 import com.earth2me.essentials.Essentials;
 import com.palmergames.bukkit.config.CommentedConfiguration;
@@ -24,6 +24,7 @@ import com.palmergames.bukkit.towny.exceptions.initialization.TownyInitException
 import com.palmergames.bukkit.towny.hooks.LuckPermsContexts;
 import com.palmergames.bukkit.towny.huds.HUDManager;
 import com.palmergames.bukkit.towny.invites.InviteHandler;
+import com.palmergames.bukkit.towny.listeners.TownyPaperEvents;
 import com.palmergames.bukkit.towny.listeners.TownyBlockListener;
 import com.palmergames.bukkit.towny.listeners.TownyCustomListener;
 import com.palmergames.bukkit.towny.listeners.TownyEntityListener;
@@ -38,6 +39,7 @@ import com.palmergames.bukkit.towny.object.Coord;
 import com.palmergames.bukkit.towny.object.PlayerCache;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.TownBlockTypeHandler;
+import com.palmergames.bukkit.towny.object.TownyWorld;
 import com.palmergames.bukkit.towny.object.Translatable;
 import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.object.WorldCoord;
@@ -98,6 +100,7 @@ import java.util.logging.Level;
  * @author Shade, ElgarL, LlmDl
  */
 public class Towny extends JavaPlugin {
+	private static final Version OLDEST_MC_VER_SUPPORTED = Version.fromString("1.16");
 	private static final Version NETHER_VER = Version.fromString("1.16.1");
 	private static final Version CUR_BUKKIT_VER = Version.fromString(Bukkit.getBukkitVersion());
 	private final String version = this.getDescription().getVersion();
@@ -113,6 +116,7 @@ public class Towny extends JavaPlugin {
 	private final TownyInventoryListener inventoryListener = new TownyInventoryListener();
 	private final TownyLoginListener loginListener = new TownyLoginListener();
 	private final HUDManager HUDManager = new HUDManager(this);
+	private final TownyPaperEvents paperEvents = new TownyPaperEvents(this);
 
 	private TownyUniverse townyUniverse;
 
@@ -159,8 +163,9 @@ public class Towny extends JavaPlugin {
 			cycleTimers();
 			// Reset the player cache.
 			resetCache();
-			// Check for plugin updates
-			TownyUpdateChecker.checkForUpdates(this);
+			// Check for plugin updates if the Minecraft version is still supported.
+			if (isMinecraftVersionStillSupported())
+				TownyUpdateChecker.checkForUpdates(this);
 			// Initialize SpawnUtil only after the Translation class has figured out a language.
 			// N.B. Important that localization loaded correctly for this step.
 			SpawnUtil.initialize(this);
@@ -669,6 +674,7 @@ public class Towny extends JavaPlugin {
 		pluginManager.registerEvents(entityListener, this);
 		pluginManager.registerEvents(inventoryListener, this);
 
+		paperEvents.register();
 	}
 
 	private void printChangelogToConsole() {
@@ -792,14 +798,14 @@ public class Towny extends JavaPlugin {
 
 	public PlayerCache newCache(Player player) {
 
-		try {
-			PlayerCache cache = new PlayerCache(TownyUniverse.getInstance().getDataSource().getWorld(player.getWorld().getName()), player);
-			playerCache.put(player.getUniqueId(), cache);
-			return cache;
-		} catch (NotRegisteredException e) {
+		TownyWorld world = TownyUniverse.getInstance().getWorld(player.getWorld().getName());
+		if (world == null) {
 			TownyMessaging.sendErrorMsg(player, "Could not create permission cache for this world (" + player.getWorld().getName() + ".");
-			return null;
+			return null;	
 		}
+		PlayerCache cache = new PlayerCache(world, player);
+		playerCache.put(player.getUniqueId(), cache);
+		return cache;
 
 	}
 
@@ -1104,6 +1110,10 @@ public class Towny extends JavaPlugin {
 		metrics.addCustomChart(new SimplePie("closed_economy_enabled", () -> String.valueOf(TownySettings.isEcoClosedEconomyEnabled())));
 		
 		metrics.addCustomChart(new SimplePie("resident_uuids_stored", TownySettings::getUUIDPercent));
+	}
+	
+	public static boolean isMinecraftVersionStillSupported() {
+		return CUR_BUKKIT_VER.compareTo(OLDEST_MC_VER_SUPPORTED) >= 0;
 	}
 	
 	public static boolean is116Plus() {

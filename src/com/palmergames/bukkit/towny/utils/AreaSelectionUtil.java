@@ -70,7 +70,7 @@ public class AreaSelectionUtil {
 			int available = claim ? 0 : 1009;
 			if (claim) {
 				if (owner instanceof Town town) {
-					available = TownySettings.getMaxTownBlocks(town) - town.getTownBlocks().size();
+					available = town.hasUnlimitedClaims() ? 1009 : town.availableTownBlocks();
 				} else if (owner instanceof Resident resident) {
 					available = TownySettings.getMaxResidentPlots(resident) - resident.getTownBlocks().size();
 				}
@@ -301,13 +301,10 @@ public class AreaSelectionUtil {
 
 		List<WorldCoord> out = new ArrayList<>();
 		for (WorldCoord worldCoord : selection)
-			try {
-				if (worldCoord.getTownyWorld().getMinDistanceFromOtherTownsPlots(worldCoord, town) >= TownySettings.getMinDistanceFromTownPlotblocks()) {
-					out.add(worldCoord);
-				} else {
-					TownyMessaging.sendDebugMsg("AreaSelectionUtil:filterInvalidProximity - Coord: " + worldCoord + " too close to another town." );
-				}
-			} catch (NotRegisteredException ignored) {
+			if (worldCoord.getTownyWorld().getMinDistanceFromOtherTownsPlots(worldCoord, town) >= TownySettings.getMinDistanceFromTownPlotblocks()) {
+				out.add(worldCoord);
+			} else {
+				TownyMessaging.sendDebugMsg("AreaSelectionUtil:filterInvalidProximity - Coord: " + worldCoord + " too close to another town." );
 			}
 		return out;
 	}
@@ -325,13 +322,10 @@ public class AreaSelectionUtil {
 
 		List<WorldCoord> out = new ArrayList<>();
 		for (WorldCoord worldCoord : selection)
-			try {
-				if (worldCoord.getTownyWorld().getMinDistanceFromOtherTowns(worldCoord, town) >= TownySettings.getMinDistanceFromTownHomeblocks()) {
-					out.add(worldCoord);
-				} else {
-					TownyMessaging.sendDebugMsg("AreaSelectionUtil:filterInvalidProximity - Coord: " + worldCoord + " too close to another town's homeblock." );
-				}
-			} catch (NotRegisteredException ignored) {
+			if (worldCoord.getTownyWorld().getMinDistanceFromOtherTowns(worldCoord, town) >= TownySettings.getMinDistanceFromTownHomeblocks()) {
+				out.add(worldCoord);
+			} else {
+				TownyMessaging.sendDebugMsg("AreaSelectionUtil:filterInvalidProximity - Coord: " + worldCoord + " too close to another town's homeblock." );
 			}
 		return out;
 	}

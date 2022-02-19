@@ -77,6 +77,10 @@ public class TownRuinUtil {
 		if (town.hasNation())
 			town.removeNation();
 
+		String oldMayorName = town.hasMayor()
+				? town.getMayor().getName()
+				: "none";
+		
 		//Set NPC mayor, otherwise mayor of ruined town cannot leave until full deletion 
 		Resident resident = ResidentUtil.createAndGetNPCResident();
 		try {
@@ -87,14 +91,14 @@ public class TownRuinUtil {
 		town.setHasUpkeep(false);
 
 		// Call the TownRuinEvent.
-		TownRuinedEvent event = new TownRuinedEvent(town);
+		TownRuinedEvent event = new TownRuinedEvent(town, oldMayorName);
 		Bukkit.getPluginManager().callEvent(event);
 		
 		// Set Town settings.
 		town.setRuined(true);
 		town.setRuinedTime(System.currentTimeMillis());
 		town.setPublic(TownySettings.areRuinsMadePublic());
-		town.setOpen(false);
+		town.setOpen(TownySettings.areRuinsMadeOpen());
 		town.getPermissions().setAll(true);
 
 		//Return town blocks to the basic, unowned, type
